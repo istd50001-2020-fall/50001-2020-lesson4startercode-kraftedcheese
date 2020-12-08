@@ -22,6 +22,8 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,13 +49,32 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         //TODO 11.1 Get references to the widgets
+        recyclerView = findViewById(R.id.charaRecyclerView);
+        imageViewAdded = findViewById(R.id.imageViewAdded);
 
         //TODO 12.7 Load the Json string from shared Preferences
+        mPreferences = getSharedPreferences(PREF_FILE, MODE_PRIVATE);
+        Gson gson = new Gson();
         //TODO 12.8 Initialize your dataSource object with the Json string
+        String json = mPreferences.getString(KEY_DATA, "NIL");
+        if (json != "NIL"){
+            dataSource = gson.fromJson(json, DataSource.class);
+        }
+
 
         //TODO 11.2 Create your dataSource object by calling Utils.firstLoadImages
+        else{
+            ArrayList<Integer> images = new ArrayList<>(Arrays.asList(R.drawable.bulbasaur, R.drawable.eevee, R.drawable.gyrados,
+                    R.drawable.spearow, R.drawable.squirtle, R.drawable.pikachu, R.drawable.psyduck, R.drawable.snorlax));
+            dataSource = Utils.firstLoadImages(this, images);
+        }
+
+
         //TODO 11.3 --> Go to CharaAdapter
         //TODO 11.8 Complete the necessary code to initialize your RecyclerView
+        charaAdapter = new CharaAdapter(this, dataSource);
+        recyclerView.setAdapter(charaAdapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         //TODO 12.9 [OPTIONAL] Add code to delete a RecyclerView item upon swiping. See notes for the code.
 
@@ -74,6 +95,11 @@ public class MainActivity extends AppCompatActivity {
     //TODO 12.6 Complete onPause to store the DataSource object in SharedPreferences as a JSON string
     @Override
     protected void onPause(){
+        SharedPreferences.Editor preferencesEditor = mPreferences.edit();
+        Gson gson = new Gson();
+        String json = gson.toJson(dataSource);
+        preferencesEditor.putString(KEY_DATA, json);
+        preferencesEditor.apply();
         super.onPause();
     }
 
@@ -106,6 +132,12 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if( requestCode == REQUEST_CODE_IMAGE && resultCode == Activity.RESULT_OK){
+            String path = data.getStringExtra("Image");
+            String name = data.getStringExtra("Name");
+            dataSource.addData(name, path);
+            imageViewAdded.setImageBitmap(dataSource.getImage(dataSource.getSize()-1));
+            Toast.makeText(MainActivity.this, "new image added!", Toast.LENGTH_SHORT).show();
+            charaAdapter.notifyDataSetChanged();
         }
 
 
